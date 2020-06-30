@@ -18,7 +18,7 @@ TA's: Dr. Michael Wainberg
 
 ## Day 2: Functional Genomics
 Instructors: Dr. Shreejoy Tripathy & Leon Fench
-TA's: Sonny Chen & Micaela Consens
+TA's: Sonny Chen & TBA
 
 9:00-10:30	Lecture 1: <Lecture 1 Title>
 10:30-10:45	Morning Break
@@ -44,7 +44,7 @@ TA's Shreyas Harita & Frank Mazza
 
 ## Day 4: Bayesian models of perception and learning
 Instructors: Dr. Andreea Diaconescu
-TA's: TBA
+TA's: Daniel Hauke & Povilas Karvelis
 
 9:00-10:30	Lecture 1: <Lecture 1 Title>
 10:30-10:45	Morning Break
@@ -57,7 +57,7 @@ TA's: TBA
 
 ## Day 5: Psychiatric epidemiology and Population-based subtyping
 Instructors: Daniel Felsky
-TA's Hajer Nakua
+TA's Hajer Nakua & Micaela Consens
 
 9:00-10:30	Lecture 1: <Lecture 1 Title>
 10:30-10:45	Morning Break
