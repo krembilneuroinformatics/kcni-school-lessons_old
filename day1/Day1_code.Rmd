@@ -1,0 +1,172 @@
+---
+title: "Day 1 KCNI summer school"
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default
+  html_notebook: default
+---
+## Activity goals
+1. Perform basic quality control on genetic dataset using PLINK
+2. Identify and undersdtand GWAS summary statistics
+3. Use PRSice software to calculate a set of PRS for a study sample
+4. Read PRS into R, visualize distributions, and perform basic association analyses
+
+## Calculation of polygenic risk scores (PRS) and analysis against gene expression in human cortex
+### PRS data requirements and formats
+
+PRSice v2 software (http://www.prsice.info/) will be used for high-resolution scoring, initial associations, and some visualization.
+
+We need two things:
+
+1. A set of genotype data for our target sample, preferably imputed genotypes.
+- PLINK file formatted data (fairly compact, portable, and common).
+
+2. A set of summary statistics from a genome-wide association study (GWAS) of our choice.
+- A delimited text file with SNP names, allele labels, and allelic effect sizes.
+
+***
+### 1. The Genotype dataset
+The first thing we need is genotype data for a study sample. In our case, we will be using modified genotype data from the Religious Orders Study and Memory and Aging Project cohort studies. These are not imputed genotypes (to keep file size manageable), so we will expect that many variants present in the GWAS summary statistics will not be found in the genotype data. This okay for our purposes.
+
+The PLINK binary file formats are arranged as follows:  
+**BED file (.bed)**: binary encoded genotypes for every subject (0/0, 0/1/, 1/1)  
+**BIM file (.bim)**: an index file with SNP-level information  
+**FAM file (.fam)**: an indes file with subject-level information 
+
+
+Let's take a look at the BIM and FAM files:
+```{bash, eval = FALSE}
+cd /kcni-school-data/geno
+head merged.bim
+```
+
+Note the columns are not named (no header). They correspond to: chromosome, SNP ID (in this case rs#), chromosomal location in centimorgans (largely defunct), physical chromosomal location in base pairs (1-based), minor allele, major allele  
+
+```{bash, eval = FALSE}
+head merged.fam
+```
+
+Note again that here is no header. The columns correspond to: family ID (useful for related samples), individual ID, father ID, mother ID, sex code, phenotype value.  
+
+The 6th column (phenotype) is often coded at -9 (missing), since in modern analyses of genotype data, we are rarely interested in a single phenotype value for each subject and want to conduct more complex analyses across multiple phenotypes. PLINK can read in extra text files for association analyses that have many columns for multiple phenotypes and co-variates.  
+
+In our case, we only want to generate a set of polygenic scores for each subject in our sample to export and perform our own analyses in R.  
+
+#### Quality control of the genomic dataset
+An excellent guide is available at https://choishingwan.github.io/PRS-Tutorial/target/  
+
+We want to verify a few things about our genotype dataset. First, we want summary statistics on how many subjects and SNPs we have. Second, we want to clean the data according to standards appropriate for GWAS. Third, we implement additional QC specific to PRS calculation.
+
+The QC steps can be conveniently accomplished using PLINK. The required QC steps are as follows:
+
+##### **SNP QC. Remove SNPs with:**  
+1A. Hardy-Weinberg equilibrium  
+2A. low genotype rate  
+3A. low minor allele frequency  
+4A. high imputation quality (if using imputed data)  
+5A. abnormal heterozygosity  
+
+##### **Subject QC. Remove subjects with:**  
+1B. low genotype rate  
+2B. a high degree of within-sample relatedness (pi-hat > 1.25; first or second degree relative)    
+3B. membership in the original GWAS on which the PRS will be based 
+
+```{bash, eval=FALSE}
+plink \
+    --bfile geno/merged \
+    --maf 0.05 \
+    --hwe 1e-6 \
+    --geno 0.01 \
+    --mind 0.01 \
+    --make-bed \
+    --out geno/raw_data_qc
+```
+
+##### heterozygosity  
+
+```{bash, eval=FALSE}
+plink \
+    --bfile EUR \
+    --extract EUR.QC.prune.in \
+    --keep EUR.QC.fam \
+    --het \
+    --out EUR.QC
+```
+
+***
+### 2. The GWAS summary statistics  
+The second thing we need is a set of full genome-wide summary statistics from a GWAS. We will use the summary statistics from  They are stored in ``` /kcni-school-data/sumstats```
+
+These files have been downloaded from the hosted repository linked in the manuscript Data Availability section (https://datashare.is.ed.ac.uk/handle/10283/3203). This is usually the best source for finding full genome-wide summary statistics rather than truncated sets of only the most significant variants.  
+
+##### **For the base data (summary stats) we ensure that:**  
+1C. The genome build (e.g. hg19, GRCH38) matches between base and target data  
+2C. Effect alleles are correctly specified  
+3C. Only autosomal SNPs are included in the calculation (unless proper sex checking has been performed)  
+4C. Heritability of the source GWAS is substantial enough to warrant PRS calculation (h2>0.05). In our case, SNP-based h2 has been estimated for us by Howard et al. (h2~0.4-0.1)  
+
+
+
+***
+### 3. Selecting parameters for PRS calculation
+
+There are several central parameters to consider when calculating a set of PRS:  
+- Which GWAS p-value thresholds do we want to include (i.e. how many PRS)?  
+- How do we want to deal with the issue of linkage disequilibrium (LD) (i.e. clumping)?  
+- Which type of PRS calculation do we want to make?  
+- Which allelic effect model do we want to use (i.e. additive, dominant, recessive)?  
+
+
+Two important steps will be performed automatically by PRSice.  
+
+1. Effect size shrinkage is not necessary, since many p-value thresholds will be tested  
+2. Checking for ambiguous alleles (allele flipping)  
+
+***
+Calculate set of PRS values, running no other statistical operation:
+```{bash, eval = FALSE}
+cd ~/kcni-school-data
+
+PRSice_linux \
+    --all-score  \
+    --bar-levels 5e-08,1e-06,1e-05,0.0001,0.001,1 \
+    --base sumstats/DS_10283_3203/PGC_UKB_depression_genome-wide.txt \
+    --fastscore  \
+    --or  \
+    --no-regress \
+    --out prs/depression \
+    --print-snp  \
+    --pvalue P \
+    --snp MarkerName \
+    --stat LogOR \
+    --target geno/merged 
+```
+
+***
+### 5. Post calculation quality control
+
+After the scores have been calculated, there are a few important things to check in the PRSice log file before continuing.
+
+```{bash, eval = FALSE}
+cd ~/kcni-scool-data/prs/
+
+cat MDD_scores.log
+```
+
+### Reading data into R
+
+```{r}
+setwd("~/kcni-school-data/")
+
+```
+
+
+
+### Association analyses of MDD PRS with provided phenotype data (gene expression in human cortical tissue)
+
+Once we are confident that our scores have been calculated correctly, incorporating the correct number of properly matched SNPs, we can proceed to using these values in any of a number of downstream analyses.  
+
+First, we will read in a phenotype dataset with a set of gene expression values and co-variates for a large subset of the subjects that we calculated PRS for. The important thing is that IIDs (col 2) from the genotype FAM file are mappable to our phenotype data.
+
+Note: we can perform a number of association analyses within PRSice itself - however, R has much more extensive and robust analytical and visualization features. Once you are able to run basic PRSice code and manage phenotype and covariate files, you can explore the full PRSice toolkit.
