@@ -89,7 +89,7 @@ da    = NaN(n,l);
 % NaN because they are undefined and are thrown away
 % at the end; their presence simply leads to consistent
 % trial indices.
-mu(1,1) = sgm(mu_0(1), 1);
+mu(1,1) = tapas_sgm(mu_0(1), 1);
 pi(1,1) = Inf;
 mu(1,2:end) = mu_0(2:end);
 pi(1,2:end) = 1./sa_0(2:end);
@@ -109,7 +109,7 @@ for k = 2:1:n
         % 1st level
         % ~~~~~~~~~
         % Prediction
-        muhat(k,1) = sgm(muhat(k,2), 1);
+        muhat(k,1) = tapas_sgm(muhat(k,2), 1);
         
         % Precision of prediction
         pihat(k,1) = 1/(muhat(k,1)*(1 -muhat(k,1)));
