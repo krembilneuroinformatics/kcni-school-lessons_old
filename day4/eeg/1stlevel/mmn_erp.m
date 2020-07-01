@@ -47,6 +47,13 @@ catch
     cd(details.erproot);
 
     % work on final preprocessed file
+    switch options.conversion.mode
+        case 'modelbased'
+            % in the modelbased analysis, we have to remove the first EEG trial because the model 
+            % only defines PEs starting from the 2nd tone (1st observed transition)            
+                prepfile = mmn_remove_first_EEG_trial(details, options);
+    end
+    
     switch options.erp.type
        case {'lowhighEpsi2', 'lowhighEpsi3'}
            D = spm_eeg_load(details.prepfile_modelbased);
