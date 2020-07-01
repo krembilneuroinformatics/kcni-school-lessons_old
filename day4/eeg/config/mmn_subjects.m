@@ -125,7 +125,7 @@ switch options.conversion.mode
 end
 
 for i = 1: length(details.convCon)
-    details.smoofile{i} = fullfile(details.convroot, ['smoothed_' details.convCon{i} '.nii,']);
+    details.smoofile{i} = fullfile(details.convroot, ['smoothed_condition_' details.convCon{i} '.nii,']);
 end
 
 details.spmfile = fullfile(details.statroot, 'SPM.mat');
