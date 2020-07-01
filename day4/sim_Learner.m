@@ -15,18 +15,15 @@ if nargin < 4
     plotPE=false;
 end
 %% Set Perceptual and Response Models
-rp_model= {'KCNI2020_constant_voltemp_exp'}; 
+rp_model= {'KCNI2020_constant_voltemp_exp'};
 if iModel == 1
     prc_model= {'KCNI2020_hgf'};
     
 else
     prc_model= {'KCNI2020_hgf_ar1_lvl3'};
-    phi_2=tapas_sgm(-1.1972,1);
-    phi_3=tapas_sgm(-2.1972,1); % Fixed to its prior
 end
 
 %% Define parameters that do not change
-kappa=1;
 ze=exp(0.5);
 beta=log(48);
 
@@ -40,13 +37,15 @@ if iModel == 1
         case 'omega_optimal'
             parArray=linspace(-2,-4,10);
             mu2_0=tapas_logit(0.5,1); % initial value of x1 (it is now 0.5).
-            rho_2=-0.01;
-            rho_3=0;
+            kappa= 0.75; % medium coupling between levels
+            rho_2=0; % no biases
+            rho_3=0; % no biases
         case 'theta'
             parArray=linspace(0.5,1,10);
             mu2_0=tapas_logit(0.5,1); % initial value of x1 (it is now 0.5).
-            rho_2=0;
-            rho_3=0;
+            kappa= 1; % increased coupling between levels
+            rho_2=0; % no biases
+            rho_3=0; % no biases
     end
 else
     switch iParameter
@@ -55,11 +54,17 @@ else
             parArray= linspace(mu3_0,1.66,10);
             mu2_0=tapas_logit(0.5,1); % initial value of x1 (it is now 0.5).
             om=linspace(-3.5,-6.5,10); % omega
+            kappa= 0.75; % medium coupling between levels
+            phi_2=tapas_sgm(-Inf,1);    % no biases
+            phi_3=tapas_sgm(-2.1972,1); % Fixed to its prior
         case 'kappa_optimal'
-            mu2_0=tapas_logit(0.5,1); % initial value of x1 (it is now 0.2);
-            parArray=linspace(0.4,0.6,10); % varying kappa
+            mu2_0=tapas_logit(0.5,1); % initial value of x1 (it is now 0.5);
+            parArray=linspace(0.1,1,10); % varying kappa
             m_2ndlevel=mu2_0;
-            om=-2; % omega
+            m_3rdlevel=tapas_logit(0.7311,1);
+            om = -2.5; % omega
+            phi_2=tapas_sgm(-Inf,1);    % no biases
+            phi_3=tapas_sgm(-2.1972,1); % Fixed to its prior
     end
 end
 
@@ -87,7 +92,7 @@ if iModel ==1
                         p_prc=[NaN, mu2_0, 1, NaN, 1,0.1,...
                             NaN, rho_2, rho_3, ...
                             NaN, kappa, NaN, -3, theta];
-                        lgstr{par} = sprintf('\\omega_3 = %3.2f', theta);
+                        lgstr{par} = sprintf('\\theta = %3.2f', theta);
                     case 'omega_optimal'
                         omega=parArray(par);
                         p_prc=[NaN, mu2_0, 1, NaN, 1,0.1,...
@@ -133,7 +138,7 @@ else
                     case 'kappa_optimal'
                         kappaArray=parArray(par);
                         p_prc=[NaN, mu2_0, 1,NaN, 1,0.1,...
-                            NaN, 0, phi_3, NaN, m_2ndlevel, 2,...
+                            NaN, phi_2, phi_3, NaN, m_2ndlevel, m_3rdlevel,...
                             NaN, kappaArray, NaN, om, 0.5];
                         lgstr{par} = sprintf('\\kappa = %3.1f', kappaArray);
                 end

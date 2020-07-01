@@ -1,6 +1,6 @@
 function [meanVolatilityProdromal,stdVolatilityProdromal, meanVolatilityDelusion,stdVolatilityDelusion,...
     meanPredictionsProdromal,stdPredictionsProdromal,meanPredictionsDelusion,stdPredictionsDelusion] = ...
-    calculateMeanTrajectories(predictionsDelusion,volatilityDelusion,predictionsProdromal,volatilityProdromal)
+    calculateMeanTrajectories(predictionsProdromal,volatilityProdromal,predictionsDelusion,volatilityDelusion)
 
 meanPredictionsDelusion    = mean(cell2mat(predictionsDelusion),2);
 stdPredictionsDelusion     = std(cell2mat(predictionsDelusion),0,2);
