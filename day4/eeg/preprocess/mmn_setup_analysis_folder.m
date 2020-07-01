@@ -20,13 +20,6 @@ for subfolder = {'config', 'subjects', 'tones', 'erp', 'stats_erp', 'stats_model
 end
 disp(['Created analysis folder tree at ' options.workdir]);
 
-%-- raw exp data ----------------------------------------------------------------------------------%
-% copy raw experimental data to analysis folder
-expDataSource   = fullfile(options.rawdir, 'tonesequences');
-expDataDest     = fullfile(options.workdir, 'tones');
-copyfile(expDataSource, expDataDest);
-disp('Copied raw experimental data to analysis subfolder tones');
-
 %-- raw eeg data ----------------------------------------------------------------------------------%
 mmn_copy_raw_eeg_data_into_analysis_folder(options);
 disp('Copied raw EEG data to analysis subfolder subjects');
