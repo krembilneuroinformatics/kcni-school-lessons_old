@@ -13,6 +13,6 @@ git clone git@github.com:krembilneuroinformatics/kcni-school-lessons.git MyFolde
 EEG Analysis
 ------------
 
-1. Download the data at `https://www.dropbox.com/sh/2rp34rk980zxgde/AABhWmp_n5Wz8KmrGZcalVj3a?dl=0`
+1. Download the open source data at `https://www.fil.ion.ucl.ac.uk/spm/data/eeg_mmn/`
 2. Set your environment using `'kcni_setup_paths'`
 3. Main script is `'mmn_master_script'`
