@@ -64,13 +64,13 @@ The weekly schedule:
 
 | Time (EST) | Session |
 |---- |----|
-| 9:00-10:30	| Lecture 1: <Lecture 1 Title> |
+| 9:00-10:30	| Lecture 1: Computational Models of Perception and Behaviour |
 | 10:30-10:45	| Morning Break |
-| 10:45-12:15	| Lecture 2:  <Lecture 1 Title> |
+| 10:45-12:15	| Turorial 1:  Hierarchical Gaussian Filter and Simulating Learners |
 | 12:15pm-1:00pm |	Lunch Break |
-| 1:00-2:30pm	 | Tutorial 1: <Tutorial 1 Title> |
+| 1:00-2:30pm	 | Lecture 2: Computational Modelling of EEG Data |
 | 2:30-2:45pm	 | Afternoon Break |
-| 2:45-4:15pm	 | Tutorial 2: <Tutorial 2 Title> |
+| 2:45-4:15pm	 | Tutorial 2: Single-trial EEG Modelling |
 | 4:30-5:00pm	| Daily Social Chat? / Q & A | 
 
 
