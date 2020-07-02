@@ -1,12 +1,21 @@
 function HGFtutorial_generate_task()
+%--------------------------------------------------------------------------
+% Maybe add a function description or tutorial overview here.
+%
+%
+%
+%--------------------------------------------------------------------------
+
 
 %% Defaults
 set(0,'defaultAxesFontSize',16);
+
+
 %% Generate Input
 numberBlocks = 10;
 probabilityStructureVolatility=[0.5,0.5,0.9,0.1,0.9,0.1,0.8,0.2,0.5,0.5];
 nTrials = 21;
-meanProb=[tapas_logit(probabilityStructureVolatility(1),1) tapas_logit(probabilityStructureVolatility(2),1)...
+meanProb = [tapas_logit(probabilityStructureVolatility(1),1) tapas_logit(probabilityStructureVolatility(2),1)...
     tapas_logit(probabilityStructureVolatility(3),1),tapas_logit(probabilityStructureVolatility(4),1)...
     tapas_logit(probabilityStructureVolatility(5),1),tapas_logit(probabilityStructureVolatility(6),1)...
     tapas_logit(probabilityStructureVolatility(7),1),tapas_logit(probabilityStructureVolatility(8),1)...
@@ -14,19 +23,20 @@ meanProb=[tapas_logit(probabilityStructureVolatility(1),1) tapas_logit(probabili
 u = [];
 figure;
 phaseArray = {'k','g','m','c','m','c','b','r','k','g'};
-for iStages=1:numberBlocks
-    [inputVector,probabilityStructureVolatility] = gen_design_volatility(meanProb(iStages), nTrials - 1);
-    subplot(5,2,iStages);
+for iStages = 1:numberBlocks
+    [inputVector, probabilityStructureVolatility] = gen_design_volatility(meanProb(iStages), nTrials - 1);
+    subplot(5, 2, iStages);
     stem(inputVector, 'r--');
     hold all
     plot(probabilityStructureVolatility, phaseArray{iStages}, 'LineWidth', 3);
     legend('t', '\theta');
-    ylim=([-0.3 1.1]);
-    u=[u;inputVector'];
+    ylim = ([-0.3 1.1]);
+    u = [u; inputVector'];
 end
 
+
 %% Basic Implementations
-% Get optimal parameters
+% Get Bayes optimal parameters given the input
 bopars = tapas_fitModel([], u, 'tapas_hgf_binary_config', 'tapas_bayes_optimal_binary_config',...
     'tapas_quasinewton_optim_config');
 tapas_hgf_binary_plotTraj(bopars);
@@ -55,7 +65,10 @@ tapas_hgf_binary_plotTraj(bopars);
 
 
 %% Simulate Behaviour
-sim = tapas_simModel(u, 'tapas_hgf_binary', bopars.p_prc.p, 'tapas_unitsq_sgm', 5,12345);
+sim = tapas_simModel(u,...
+    'tapas_hgf_binary', bopars.p_prc.p,...
+    'tapas_unitsq_sgm', 5,...
+    12345);
 tapas_hgf_binary_plotTraj(sim);
 
 % We simulate an agent's responses using the simModel function. To do 
@@ -65,14 +78,18 @@ tapas_hgf_binary_plotTraj(sim);
 % with parameter $\zeta=5$. The last argument is an optional seed for the random 
 % number generator.
 
+
 %% Inversion
-est = tapas_fitModel(sim.y, sim.u, 'tapas_hgf_binary_config', 'tapas_unitsq_sgm_config', 'tapas_quasinewton_optim_config');
+est = tapas_fitModel(sim.y, sim.u,...
+    'tapas_hgf_binary_config',...
+    'tapas_unitsq_sgm_config',...
+    'tapas_quasinewton_optim_config');
 tapas_hgf_binary_plotTraj(est);
-tapas_fit_plotCorr(est);
 
 % Recover parameter values from simulated responses:
 % We can now try to recover the parameters we put into the simulation ($\omega_2=-2.5$ 
 % and $\omega_3=-6$) using fitModel.
+
 
 %% Check parameter identifiability
 % To check how well the parameters could be identified, we can take a look at 
@@ -87,58 +104,61 @@ tapas_fit_plotCorr(est);
 % on the value of the one that has been fixed.
 
 tapas_fit_plotCorr(est)
-%% 
+colormap(flipud(gray)) % Change colormap to gray
+add_values_to_imagesc(est.optim.Corr); % Add correlation values to plot
+ 
 % In this case, there is nothing to worry about. Unless their correlation 
 % is very close to +1 or -1, two parameters are identifiable, meaning that they 
 % describe distinct aspects of the data.
-% 
+
 % The posterior parameter correlation matrix is stored in est.optim.Corr,
-
 disp(est.optim.Corr)
-%% 
-% while the posterior parameter covariance matrix is stored in est.optim.Sigma
-
+ 
+% While the posterior parameter covariance matrix is stored in est.optim.Sigma
 disp(est.optim.Sigma)
+
+
 %% Posterior means
 % The posterior means of the estimated as well as the fixed parameters can be 
 % found in est.p_prc for the perceptual model and in est.p_obs for the observation 
 % model:
-
 disp(est.p_prc)
 disp(est.p_obs)
-%% 
+ 
 % The posterior means are contained in these structures separately by name 
 % (e.g., om for $\omega$) as well as jointly as a vector $p$ in their native space 
 % and as a vector $p_{\mathrm{trans}}$ in their transformed space (ie, the space 
 % they are estimated in). For details, see the manual.
+
+
 %% Inferred belief trajectories
 % As with the simulated trajectories, we can plot the inferred belief trajectories 
 % implied by the estimated parameters.
-
 tapas_hgf_binary_plotTraj(est);
-%% 
+ 
 % These trajectories can be found in est.traj:
-
 disp(est.traj)
+
 
 %% Other Perceptual models
 % Next, let's try to fit the same data using a different perceptual model while 
 % keeping the same response model. We will take the Rescorla-Wagner model _rw_binary_.
-
 est1a = tapas_fitModel(sim.y,...
                        sim.u,...
                        'tapas_rw_binary_config',...
                        'tapas_unitsq_sgm_config',...
                        'tapas_quasinewton_optim_config');
-%% 
+                   
 % The single estimated perceptual parameter is the constant learning rate 
 % $\alpha$.
 % 
 % Just as for _hgf_binary_, we can plot posterior correlations and inferred 
 % trajectories for _rw_binary_.
-
-tapas_fit_plotCorr(est1a)
 tapas_rw_binary_plotTraj(est1a)
+tapas_fit_plotCorr(est1a)
+colormap(flipud(gray)) % Change colormap to gray
+add_values_to_imagesc(est.optim.Corr); % Add correlation values to plot
+
 
 %% Compare learning rates: HGF versus Rescorla-Wagner
 figure; 
@@ -150,29 +170,37 @@ title('Learning Rates: RW versus HGF');
 xlabel('Trials');
 ylabel('Learning Rates');
 legend('RW','HGF LR1','HGF LR2','Location','northwest');
-                   
+  
+
 %% Add Volatility
 new_input = [];
-for iStages=1:numberBlocks
-    [inputVolatility,probabilityStructureVolatility]=gen_design(meanProb(iStages), nTrials - 1);
-    new_input=[new_input;inputVolatility'];
+for iStages = 1:numberBlocks
+    [inputVolatility, probabilityStructureVolatility] = gen_design(meanProb(iStages), nTrials - 1);
+    new_input = [new_input; inputVolatility'];
     subplot(5,2,iStages);
     stem(inputVolatility, 'r--');
     hold all
     plot(probabilityStructureVolatility, phaseArray{iStages}, 'LineWidth', 3);
     legend('t', '\theta');
-    ylim=([-0.3 1.1]);
-    u=[u;inputVolatility'];
+    ylim = ([-0.3 1.1]);
+    u = [u;inputVolatility'];
 end
 
 % Simulation
-sim2 = tapas_simModel(new_input, 'tapas_hgf_binary', bopars.p_prc.p, 'tapas_unitsq_sgm', 5);
+sim2 = tapas_simModel(new_input,...
+    'tapas_hgf_binary', bopars.p_prc.p,...
+    'tapas_unitsq_sgm', 5);
 tapas_hgf_binary_plotTraj(sim2);
 
 % Inversion
-est2 = tapas_fitModel(sim2.y, sim2.u, 'tapas_hgf_binary_config', 'tapas_unitsq_sgm_config', 'tapas_quasinewton_optim_config');
+est2 = tapas_fitModel(sim2.y, sim2.u,...
+    'tapas_hgf_binary_config',...
+    'tapas_unitsq_sgm_config',...
+    'tapas_quasinewton_optim_config');
 tapas_hgf_binary_plotTraj(est2);
 tapas_fit_plotCorr(est2);
+colormap(flipud(gray)) % Change colormap to gray
+add_values_to_imagesc(est.optim.Corr); % Add correlation values to plot
 
 % RW
 est2a = tapas_fitModel(sim2.y,...
@@ -181,18 +209,21 @@ est2a = tapas_fitModel(sim2.y,...
                        'tapas_unitsq_sgm_config',...
                        'tapas_quasinewton_optim_config');
 
+                   
 %% Compare learning rates: HGF versus Rescorla-Wagner
 figure; 
+hold on; 
 plot(est1a.p_prc.al.*ones(size(est1a.traj.v(:,1),1),1),'b','MarkerSize',6);
-hold on; plot(est.traj.muhat(:,1).*(1-est.traj.muhat(:,1)).*est.traj.sahat(:,2),'r','MarkerSize',6);
+plot(est.traj.muhat(:,1).*(1-est.traj.muhat(:,1)).*est.traj.sahat(:,2),'r','MarkerSize',6);
 plot(est.traj.sahat(:,3).*est.traj.w(:,2),'s-m','MarkerSize',6);
-
 plot(est2a.p_prc.al.*ones(size(est2a.traj.v(:,1),1),1),'c','MarkerSize',6);
 plot(est2.traj.muhat(:,1).*(1-est2.traj.muhat(:,1)).*est2.traj.sahat(:,2),'k','MarkerSize',6);
 plot(est2.traj.sahat(:,3).*est2.traj.w(:,2),'s-g','MarkerSize',6);
-
+hold off;
 xlim([1 210]);
 title('Learning Rates: RW versus HGF');
 xlabel('Trials');
 ylabel('Learning Rates');
 legend('RW','HGF LR1','HGF LR2','Location','northwest');
+
+
