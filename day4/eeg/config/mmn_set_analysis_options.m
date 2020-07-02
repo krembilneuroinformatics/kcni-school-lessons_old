@@ -1,18 +1,21 @@
-function options = mmn_set_analysis_options
+function options = mmn_set_analysis_options(maindir)
 %mmn_SET_ANALYSIS_OPTIONS Analysis options function for mmn project
 %   IN:     -
 %   OUT:    options     - a struct with all analysis parameters for the
 %                       different steps of the analysis.
 
 %-- where to find the data -----------------------------------------------%
-[~, uid] = unix('whoami'); 
-switch uid(1: end-1)     
-    case {'drea'}
-        options.maindir = '/Users/drea/Documents/Courses/KCNISummerSchool/eeg';
-    otherwise
-        error(['Undefined user. Please specify a user in mmn_set_analysis_options ' ...
-            'and provide the path to the data']);
-end
+options.maindir = maindir;
+
+% [~, uid] = unix('whoami'); 
+% switch uid(1: end-1)     
+%     case {'drea'}
+%         options.maindir = '/Users/drea/Documents/Courses/KCNISummerSchool/eeg';
+%     otherwise
+%         error(['Undefined user. Please specify a user in mmn_set_analysis_options ' ...
+%             'and provide the path to the data']);
+% end
+
 options.workdir = fullfile(options.maindir, 'results');
 options.rawdir  = fullfile(options.maindir, 'data');
 options.codedir = fileparts(mfilename('fullpath'));

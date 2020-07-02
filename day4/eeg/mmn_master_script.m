@@ -1,8 +1,10 @@
 % --- Analysis script for MMN Roving EEG dataset --- %
 
+% Indicate the path to the directory */day4/eeg on your PC:
+maindir = 
 
 % set all analysis options and provide the path to the data
-options = mmn_set_analysis_options;
+options = mmn_set_analysis_options(maindir);
 
 % create the folder structure needed for the full analysis, and fill with necessary raw data
 mmn_setup_analysis_folder(options);
