@@ -1,4 +1,4 @@
-function inputVector=gen_design_volatility(meanProb, nTrials, degreeVol)
+function [inputVector,theta_t] = gen_design_volatility(meanProb, nTrials, degreeVol)
 %
 % This code generates sequences according to the Hierarchical Gaussian Filter model:
 % theta_r and theta_t are probabilities drawn from a Bernoulli
@@ -43,15 +43,4 @@ for k=1:nTrials
     theta_t(k+1) = tapas_sgm(x2_t(k+1), 1);
     inputVector(k+1)=(rand()<=theta_t(k+1));
 end
-figure;
-hs(1) = subplot(2,1,1);
-stem(inputVector, 'm--');
-ylim=([-0.3 1.1]);
-hold all
-plot(theta_t, 'r', 'LineWidth', 3);
-legend('t', '\theta_t');
-hs(2) = subplot(2,1,2);
-plot(x2_t); hold all
-legend('x_{2,t}')
-linkaxes(hs, 'x');
 end

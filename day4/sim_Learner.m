@@ -1,14 +1,12 @@
 function [predictions, volatility] = sim_Learner(iInput,iParameter,iModel,plotPE)
-pathroot= fileparts(mfilename('fullpath')); %%% CHANGE;
-savepath = [pathroot '/sim_results/'];
-rp_model= {'softmax_social'}; %%Change
 
+%% In case of no inputs
 if nargin < 1
     iInput=load('inputs_volatility_hiprobs.txt');
 end
 
 if nargin < 2
-    iParameter = 'omega_2ndlevel';
+    iParameter = 'omega';
 end
 if nargin < 3
     iModel = 1;
@@ -16,55 +14,64 @@ end
 if nargin < 4
     plotPE=false;
 end
-
-plotmu2hat=false;
-probabilityAdvice = [0.8,0.8,0.10,0.90,0.5,0.10,0.90,0.50,0.8,0.8];
-nTrials = 21;
+%% Set Perceptual and Response Models
+rp_model= {'KCNI2020_constant_voltemp_exp'};
 if iModel == 1
-    switch iParameter
-        case 'omega_2ndlevel'
-            parArray=[-10.5:0.5:-6.5];
-            mu2_0=tapas_logit(0.45,1); % initial value of x1 (it is now 0.5).
-            rho_2=-0.01;
-            rho_3=0;
-        case 'omega_3rdlevel'
-            parArray=[-6.5:0.25:-2.5];
-            mu2_0=tapas_logit(0.5,1); % initial value of x1 (it is now 0.5).
-            rho_2=0;
-            rho_3=0;
-    end
+    prc_model= {'KCNI2020_hgf'};
+    
 else
-    switch iParameter
-        case 'm_3rdlevel'
-            mu3_0=1;
-            parArray=[mu3_0:0.11:1.66];
-            mu2_0=tapas_logit(0.5,1); % initial value of x1 (it is now 0.5).
-            om=[-6.5:0.5:-3.5]; % omega
-        case 'phi_2ndlevel_biasedPrior'
-            mu2_0=tapas_logit(0.5,1); % initial value of x1 (it is now 0.2);
-            parArray=[tapas_sgm(-5,1):0.05:tapas_sgm(-1,1)]; % varying phi
-            m_2ndlevel=tapas_logit(0.4,1);
-            om=-6; % omega
-    end
+    prc_model= {'KCNI2020_hgf_ar1_lvl3'};
 end
 
-
-
-% Define parameters that do not change
-
-kappa=1;
+%% Define parameters that do not change
 ze=exp(0.5);
 beta=log(48);
 
+plotmu2hat=false;
+probabilityStructure = [0.8,0.8,0.8,0.10,0.10,0.90,0.10,0.80,0.20,0.5];
+nTrials = 21;
+
+%% Learning Parameters
 if iModel == 1
-    prc_model= {'tapas_hgf_binary'};
-    
+    switch iParameter
+        case 'omega_optimal'
+            parArray=linspace(-2,-4,10);
+            mu2_0=tapas_logit(0.5,1); % initial value of x1 (it is now 0.5).
+            kappa= 0.75; % medium coupling between levels
+            rho_2=0; % no biases
+            rho_3=0; % no biases
+        case 'theta'
+            parArray=linspace(0.5,1,10);
+            mu2_0=tapas_logit(0.5,1); % initial value of x1 (it is now 0.5).
+            kappa= 1; % increased coupling between levels
+            rho_2=0; % no biases
+            rho_3=0; % no biases
+    end
 else
-    prc_model= {'tapas_hgf_ar1_binary'};
-    phi_2=tapas_sgm(-1.1972,1);
-    phi_3=tapas_sgm(-2.1972,1); % Fixed to its prior
+    switch iParameter
+        case 'm3'
+            mu3_0=1;
+            parArray= linspace(mu3_0,1.66,10);
+            mu2_0=tapas_logit(0.5,1); % initial value of x1 (it is now 0.5).
+            om=linspace(-3.5,-6.5,10); % omega
+            kappa= 0.75; % medium coupling between levels
+            phi_2=tapas_sgm(-Inf,1);    % no biases
+            phi_3=tapas_sgm(-2.1972,1); % Fixed to its prior
+        case 'kappa_optimal'
+            mu2_0=tapas_logit(0.5,1); % initial value of x1 (it is now 0.5);
+            parArray=linspace(0.1,1,10); % varying kappa
+            m_2ndlevel=mu2_0;
+            m_3rdlevel=tapas_logit(0.7311,1);
+            om = -2.5; % omega
+            phi_2=tapas_sgm(-Inf,1);    % no biases
+            phi_3=tapas_sgm(-2.1972,1); % Fixed to its prior
+    end
 end
 
+
+
+
+%% Generate Learners
 prob = load('SIBAK_Inputs.txt');
 cue=prob(:,2);
 
@@ -80,18 +87,18 @@ if iModel ==1
             for par=1:P
                 final_input_u=iInput;
                 switch iParameter
-                    case 'omega_3rdlevel'
-                        omega_3rdlevel=parArray(par);
+                    case 'theta'
+                        theta=parArray(par);
                         p_prc=[NaN, mu2_0, 1, NaN, 1,0.1,...
                             NaN, rho_2, rho_3, ...
-                            NaN, kappa, NaN, -3, omega_3rdlevel];
-                        lgstr{par} = sprintf('\\omega_3 = %3.2f', omega_3rdlevel);
-                    case 'omega_2ndlevel'
-                        omega_2ndlevel=parArray(par);
+                            NaN, kappa, NaN, -3, theta];
+                        lgstr{par} = sprintf('\\theta = %3.2f', theta);
+                    case 'omega_optimal'
+                        omega=parArray(par);
                         p_prc=[NaN, mu2_0, 1, NaN, 1,0.1,...
                             NaN, rho_2, rho_3, ...
-                            NaN, kappa, NaN, omega_2ndlevel, -4];
-                        lgstr{par} = sprintf('\\omega_2 = %3.2f', omega_2ndlevel);
+                            NaN, kappa, NaN, omega, 0.5];
+                        lgstr{par} = sprintf('\\omega_2 = %3.2f', omega);
                 end
                 
                 
@@ -122,18 +129,18 @@ else
                 final_input_u=iInput;
                 
                 switch iParameter
-                    case 'm_3rdlevel'
-                        m_3rdlevel=parArray(par);
+                    case 'm3'
+                        m3=parArray(par);
                         p_prc=[NaN, mu2_0, 1,NaN, 1,0.1,...
-                            NaN, phi_2, phi_3, NaN, 0, m_3rdlevel,...
-                            NaN, kappa, NaN, -2, -3];
-                        lgstr{par} = sprintf('m_3 = %3.1f', m_3rdlevel);
-                    case 'phi_2ndlevel_biasedPrior'
-                        phi_2ndlevel=parArray(par);
+                            NaN, phi_2, phi_3, NaN, 0, m3,...
+                            NaN, kappa, NaN, -2, 0.5];
+                        lgstr{par} = sprintf('m_3 = %3.1f', m3);
+                    case 'kappa_optimal'
+                        kappaArray=parArray(par);
                         p_prc=[NaN, mu2_0, 1,NaN, 1,0.1,...
-                            NaN, phi_2ndlevel, phi_3, NaN, m_2ndlevel, 2,...
-                            NaN, kappa, NaN, om, -6];
-                        lgstr{par} = sprintf('\\phi_2 = %3.1f', phi_2ndlevel);
+                            NaN, phi_2, phi_3, NaN, m_2ndlevel, m_3rdlevel,...
+                            NaN, kappaArray, NaN, om, 0.5];
+                        lgstr{par} = sprintf('\\kappa = %3.1f', kappaArray);
                 end
                 sim = tapas_simModel([final_input_u cue(1:size(final_input_u),:)], prc_model{i}, p_prc, rp_model{m}, [ze beta]);
                 colors=jet(P);
@@ -208,11 +215,11 @@ end
         %% Prediction
         if plotPE==true
             axes(sh(2));
-            probs=[ones(nTrials,1).*probabilityAdvice(1);ones(nTrials,1).*probabilityAdvice(2);...
-                ones(nTrials,1).*probabilityAdvice(3);ones(nTrials,1).*probabilityAdvice(4);...
-                ones(nTrials,1).*probabilityAdvice(5); ones(nTrials,1).*probabilityAdvice(6);...
-                ones(nTrials,1).*probabilityAdvice(7); ones(nTrials,1).*probabilityAdvice(8);...
-                ones(nTrials,1).*probabilityAdvice(9); ones(nTrials,1).*probabilityAdvice(10)];
+            probs=[ones(nTrials,1).*probabilityStructure(1);ones(nTrials,1).*probabilityStructure(2);...
+                ones(nTrials,1).*probabilityStructure(3);ones(nTrials,1).*probabilityStructure(4);...
+                ones(nTrials,1).*probabilityStructure(5); ones(nTrials,1).*probabilityStructure(6);...
+                ones(nTrials,1).*probabilityStructure(7); ones(nTrials,1).*probabilityStructure(8);...
+                ones(nTrials,1).*probabilityStructure(9); ones(nTrials,1).*probabilityStructure(10)];
             plot(0:t-1,probs,'Color',[0.5 0.5 0.5], 'LineWidth', 2);
             hold on;
             
@@ -234,7 +241,7 @@ end
                         case 'rho_3rdlevel'
                             title(['Input u (green), Prediction about Advice Validity with ' sprintf('\\omega='), num2str(sim.p_prc.om(1,2)), ...
                                 ',' sprintf('\\rho_2='), num2str(sim.p_prc.rho(:,2))],'FontWeight', 'bold');
-                        case {'omega_2ndlevel','omega_3rdlevel'}
+                        case {'omega','theta'}
                             title(['Input u (green), Prediction about Advice Validity with ' sprintf('\\kappa='), num2str(sim.p_prc.ka(1,2)), ...
                                 ',' sprintf('\\rho_2='), num2str(sim.p_prc.rho(:,2)),',' sprintf('\\rho_3='), num2str(sim.p_prc.rho(:,3))],'FontWeight', 'bold');
                             
@@ -265,7 +272,7 @@ end
                         case 'rho_3rdlevel'
                             title(['Input u (green), Prediction about Advice Validity with ' sprintf('\\omega='), num2str(sim.p_prc.om(1,2)), ...
                                 ',' sprintf('\\rho_2='), num2str(sim.p_prc.rho(:,2))],'FontWeight', 'bold');
-                        case {'omega_2ndlevel','omega_3rdlevel'}
+                        case {'omega','theta'}
                             title(['Input u (green), Prediction about Advice Validity with ' sprintf('\\kappa='), num2str(sim.p_prc.ka(1,2)), ...
                                 ',' sprintf('\\rho_2='), num2str(sim.p_prc.rho(:,2)),',' sprintf('\\rho_3='), num2str(sim.p_prc.rho(:,3))],'FontWeight', 'bold');
                             
@@ -281,11 +288,11 @@ end
             axes(sh(2));
             lgh_a=plot(0:t, [tapas_sgm(sim.p_prc.mu_0(1,2), 1); tapas_sgm(sim.traj.mu(:,2), 1)],'Color', currCol, 'LineWidth', 2);
             hold on;
-            plot(0:t-1,([ones(nTrials,1).*probabilityAdvice(1);ones(nTrials,1).*probabilityAdvice(2);...
-                ones(nTrials,1).*probabilityAdvice(3);ones(nTrials,1).*probabilityAdvice(4);...
-                ones(nTrials,1).*probabilityAdvice(5); ones(nTrials,1).*probabilityAdvice(6);...
-                ones(nTrials,1).*probabilityAdvice(7); ones(nTrials,1).*probabilityAdvice(8);...
-                ones(nTrials,1).*probabilityAdvice(9);ones(nTrials,1).*probabilityAdvice(10)]),'Color', 'k', 'LineWidth', 2);
+            plot(0:t-1,([ones(nTrials,1).*probabilityStructure(1);ones(nTrials,1).*probabilityStructure(2);...
+                ones(nTrials,1).*probabilityStructure(3);ones(nTrials,1).*probabilityStructure(4);...
+                ones(nTrials,1).*probabilityStructure(5); ones(nTrials,1).*probabilityStructure(6);...
+                ones(nTrials,1).*probabilityStructure(7); ones(nTrials,1).*probabilityStructure(8);...
+                ones(nTrials,1).*probabilityStructure(9);ones(nTrials,1).*probabilityStructure(10)]),'Color', 'k', 'LineWidth', 2);
             plot(0, tapas_sgm(sim.p_prc.mu_0(1,2), 1), 'o', 'Color', currCol,  'LineWidth', 2); % prior
             plot(1:t, sim.u(:,1), 'o', 'Color', [0 0.6 0]); % inputs
             
@@ -301,7 +308,7 @@ end
                         case 'rho_3rdlevel'
                             title(['Input u (green), Prediction about Advice Validity with ' sprintf('\\omega='), num2str(sim.p_prc.om(1,2)), ...
                                 ',' sprintf('\\rho_2='), num2str(sim.p_prc.rho(:,2))],'FontWeight', 'bold');
-                        case {'omega_2ndlevel','omega_3rdlevel'}
+                        case {'omega','theta'}
                             title(['Input u (green), Prediction about Advice Validity with ' sprintf('\\kappa='), num2str(sim.p_prc.ka(1,2)), ...
                                 ',' sprintf('\\rho_2='), num2str(sim.p_prc.rho(:,2)),',' sprintf('\\rho_3='), num2str(sim.p_prc.rho(:,3))],'FontWeight', 'bold');
                             

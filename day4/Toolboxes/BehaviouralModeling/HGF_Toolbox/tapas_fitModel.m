@@ -38,20 +38,21 @@ function r = tapas_fitModel(responses, inputs, varargin)
 %     est.y              Observed responses (i.e., the responses array from the arguments)
 %     est.irr            Index numbers of irregular trials
 %     est.ign            Index numbers of ignored trials
-%     est.c_prc          Configuration settings for your chosen perceptual model
+%     est.c_prc          Configuration settings for the chosen perceptual model
 %                        (see the configuration file of that model for details)
-%     est.c_obs          Configuration settings for your chosen observation model
+%     est.c_obs          Configuration settings for the chosen observation model
 %                        (see the configuration file of that model for details)
-%     est.c_opt          Configuration settings for your chosen optimization algorithm
+%     est.c_opt          Configuration settings for the chosen optimization algorithm
 %                        (see the configuration file of that algorithm for details)
-%     est.optim          A place for the optimization algorithm to dump infos of interest to it
+%     est.optim          A place where information on the optimization results is stored
+%                        (e.g., measures of model quality like LME, AIC, BIC, and posterior
+%                        parameter correlation)
 %     est.p_prc          Maximum-a-posteriori estimates of perceptual parameters
 %                        (see the configuration file of your chosen perceptual model for details)
 %     est.p_obs          Maximum-a-posteriori estimates of observation parameters
 %                        (see the configuration file of your chosen observation model for details)
 %     est.traj:          Trajectories of the environmental states tracked by the perceptual model
 %                        (see the configuration file of that model for details)
-%     est.F              The negative free energy. This is a lower bound on the log-model evidence.
 %
 % CONFIGURATION:
 %     In order to fit a model in this framework, you have to make three choices:
@@ -114,7 +115,7 @@ function r = tapas_fitModel(responses, inputs, varargin)
 %     tapas_fit_plotCorr(est)
 %
 % --------------------------------------------------------------------------------------------------
-% Copyright (C) 2012-2013 Christoph Mathys, TNU, UZH & ETHZ
+% Copyright (C) 2012-2015 Christoph Mathys, TNU, UZH & ETHZ
 %
 % This file is part of the HGF toolbox, which is released under the terms of the GNU General Public
 % Licence (GPL), version 3. You can redistribute it and/or modify it under the terms of the GPL
@@ -128,33 +129,18 @@ r = dataPrep(responses, inputs);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% CONFIGURE THESE AS DESCRIBED ABOVE:
+% THE DEFAULTS DEFINED HERE WILL BE OVERWRITTEN BY ANY ARGUMENTS GIVEN WHEN CALLING tapas_fitModel.m
 %
-% Perceptual model
-% ~~~~~~~~~~~~~~~~
-% Choices are: 
-% - tapas_hgf_binary_config
-% - tapas_hgf_binary3l_config
-% - tapas_rw_binary_config
-% - tapas_hgf_config
-% - tapas_hgf_ar1_config
+% Default perceptual model
+% ~~~~~~~~~~~~~~~~~~~~~~~~
 r.c_prc = tapas_hgf_binary_config;
 
-% Observation model
-% ~~~~~~~~~~~~~~~~~
-% Choices are:
-% - tapas_unitsq_sgm_config                 (compatible with *_binary_config)
-% - tapas_softmax_binary_config             (compatible with *_binary_config)
-% - tapas_bayes_optimal_binary_config       (compatible with *_binary_config)
-% - tapas_gaussian_obs_config               (compatible with tapas_hgf_config)
-% - tapas_bayes_optimal_config              (compatible with tapas_hgf_config)
-% - tapas_squared_pe_config                 (compatible with tapas_hgf_config)
-r.c_obs = ioio_constant_voltemp_exp_config;
+% Default observation model
+% ~~~~~~~~~~~~~~~~~~~~~~~~~
+r.c_obs = tapas_unitsq_sgm_config;
 
-% Optimization algorithm
-% ~~~~~~~~~~~~~~~~~~~~~~
-% Choices are:
-% - tapas_quasinewton_optim_config
+% Default optimization algorithm
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 r.c_opt = tapas_quasinewton_optim_config;
 
 % END OF CONFIGURATION
@@ -162,7 +148,7 @@ r.c_opt = tapas_quasinewton_optim_config;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% Overridden settings from the command line
+% Override default settings with arguments from the command line
 if nargin > 2 && ~isempty(varargin{1})
     r.c_prc = eval(varargin{1});
 end
@@ -185,6 +171,9 @@ r.c_prc.priorsas(r.c_prc.priorsas==99992) = r.plh.p99992;
 r.c_prc.priormus(r.c_prc.priormus==99993) = r.plh.p99993;
 r.c_prc.priorsas(r.c_prc.priorsas==99993) = r.plh.p99993;
 
+r.c_prc.priormus(r.c_prc.priormus==-99993) = -r.plh.p99993;
+r.c_prc.priorsas(r.c_prc.priorsas==-99993) = -r.plh.p99993;
+
 r.c_prc.priormus(r.c_prc.priormus==99994) = r.plh.p99994;
 r.c_prc.priorsas(r.c_prc.priorsas==99994) = r.plh.p99994;
 
@@ -192,9 +181,6 @@ r = rmfield(r, 'plh');
 
 % Estimate mode of posterior parameter distribution (MAP estimate)
 r = optim(r, r.c_prc.prc_fun, r.c_obs.obs_fun, r.c_opt.opt_algo);
-
-% Store maximum of the log-joint
-r.maxLogJoint = -r.optim.valMin;
 
 % Separate perceptual and observation parameters
 n_prcpars = length(r.c_prc.priormus);
@@ -211,15 +197,37 @@ r.p_obs.p      = r.c_obs.transp_obs_fun(r, ptrans_obs);
 r.p_prc.ptrans = ptrans_prc;
 r.p_obs.ptrans = ptrans_obs;
 
-% Store representations at MAP estimate
-r.traj = r.c_prc.prc_fun(r, r.p_prc.p);
+% Store representations at MAP estimate, response predictions, and residuals
+[r.traj, infStates] = r.c_prc.prc_fun(r, r.p_prc.ptrans, 'trans');
+[dummy, r.optim.yhat, r.optim.res] = r.c_obs.obs_fun(r, infStates, r.p_obs.ptrans);
+
+% Calculate autocorrelation of residuals
+res = r.optim.res;
+res(isnan(res)) = 0; % Set residuals of irregular trials to zero
+r.optim.resAC = tapas_autocorr(res);
 
 % Print results
+ftbrm = {'p', 'ptrans'};
+dispprc = rmfield(r.p_prc, ftbrm);
+dispobs = rmfield(r.p_obs, ftbrm);
+
 disp(' ')
 disp('Results:');
-disp(r.p_prc)
-disp(r.p_obs)
-disp(['Negative free energy F: ' num2str(r.F)])
+disp(' ')
+disp('Parameter estimates for the perceptual model:');
+disp(dispprc)
+if ~isempty(fieldnames(dispobs))
+    disp(' ')
+    disp('Parameter estimates for the observation model:');
+    disp(dispobs)
+end
+disp('Model quality:');
+disp(['    LME (more is better): ' num2str(r.optim.LME)])
+disp(['    AIC (less is better): ' num2str(r.optim.AIC)])
+disp(['    BIC (less is better): ' num2str(r.optim.BIC)])
+disp(' ')
+disp(['    AIC and BIC are approximations to -2*LME = ' num2str(-2*r.optim.LME) '.'])
+disp(' ')
 
 return;
 
@@ -328,45 +336,10 @@ n_obspars = length(r.c_obs.priormus);
 % The negative log-joint as a function of a single parameter vector
 nlj = @(p) [negLogJoint(r, prc_fun, obs_fun, p(1:n_prcpars), p(n_prcpars+1:n_prcpars+n_obspars))];
 
-% Automatically find a sensible upper bound on theta if desired (and if theta exists)
-if isfield(r.c_prc, 'thub') && r.c_prc.thub == 0
-    disp(' ')
-    disp('Determining the upper bound on theta...')
-
-    maxub = 2;
-    ul = maxub;
-    ll = 0;
-    while (ul-ll)/ul > 1e-2
-        testval = ll+(ul-ll)/2;
-        r.c_prc.thub = testval;
-        nlj = @(p) [negLogJoint(r, prc_fun, obs_fun, p(1:n_prcpars), p(n_prcpars+1:n_prcpars+n_obspars))];
-        [dummy, rval] = nlj(init);
-        if rval ~= 0
-            ul = testval;
-        else
-            ll = testval;
-        end
-
-        if ul == maxub
-            ll = maxub;
-            break;
-        end
-    end
-
-    if ll ~= 0
-        r.c_prc.thub = ll;
-        nlj = @(p) [negLogJoint(r, prc_fun, obs_fun, p(1:n_prcpars), p(n_prcpars+1:n_prcpars+n_obspars))];
-        disp(' ')
-        disp(['Set the upper bound on theta to ', num2str(r.c_prc.thub), '.'])
-    else
-        error('Prior means are in a region where the log-joint cannot be evaluated. Please adjust.');
-    end
-else
-    % Check whether priors are in a region where the objective function can be evaluated
-    [dummy, rval, err] = nlj(init);
-    if rval ~= 0
-        rethrow(err);
-    end
+% Check whether priors are in a region where the objective function can be evaluated
+[dummy1, dummy2, rval, err] = nlj(init);
+if rval ~= 0
+    rethrow(err);
 end
 
 % The objective function is now the negative log joint restricted
@@ -383,13 +356,17 @@ final = init;
 final(opt_idx) = r.optim.argMin';
 r.optim.final = final;
 
-% Calculate the covariance matrix Sigma and the negative free energy F.
+% Get the negative log-joint and negative log-likelihood
+[negLj, negLl] = nlj(final);
+
+% Calculate the covariance matrix Sigma and the log-model evidence (as approximated
+% by the negative variational free energy under the Laplace assumption).
 disp(' ')
-disp('Calculating the negative free energy...')
+disp('Calculating the log-model evidence (LME)...')
 d     = length(opt_idx);
 Sigma = NaN(d);
 Corr  = NaN(d);
-F     = NaN;
+LME   = NaN;
 
 options.init_h    = 1;
 options.min_steps = 10;
@@ -402,34 +379,57 @@ H = tapas_riddershessian(obj_fun, r.optim.argMin, options);
 if any(isinf(H(:))) || any(isnan(H(:))) || any(eig(H)<=0)
     if isfield(r.optim, 'T')
         % Hessian of the negative log-joint at the MAP estimate
-        H     = inv(r.optim.T);
+        % (avoid asymmetry caused by rounding errors)
+        H = inv(r.optim.T);
+        H = (H' + H)./2;
         % Parameter covariance 
         Sigma = r.optim.T;
         % Parameter correlation
         Corr = tapas_Cov2Corr(Sigma);
-        % Negative free energy
-        F     = -r.optim.valMin + 1/2*log(1/det(H)) + d/2*log(2*pi);
+        % Log-model evidence ~ negative variational free energy
+        LME   = -r.optim.valMin + 1/2*log(1/det(H)) + d/2*log(2*pi);
     else
-        disp('Warning: Cannot calculate Sigma and F because the Hessian is not positive definite.')    
+        disp('Warning: Cannot calculate Sigma and LME because the Hessian is not positive definite.')
     end
 else
-    % Parameter covariance
+    % Calculate parameter covariance (and avoid asymmetry caused by
+    % rounding errors)
     Sigma = inv(H);
+    Sigma = (Sigma' + Sigma)./2;
     % Parameter correlation
     Corr = tapas_Cov2Corr(Sigma);
-    % Negative free energy
-    F = -r.optim.valMin + 1/2*log(1/det(H)) + d/2*log(2*pi);    
+    % Log-model evidence ~ negative variational free energy
+    LME = -r.optim.valMin + 1/2*log(1/det(H)) + d/2*log(2*pi);
 end
+
+% Calculate accuracy and complexity (LME = accu - comp)
+accu = -negLl;
+comp = accu -LME;
+
+% Calculate AIC and BIC
+if ~isempty(r.y)
+    ndp = sum(~isnan(r.y(:,1)));
+else
+    ndp = sum(~isnan(r.u(:,1)));
+end
+AIC  = 2*negLl +2*d;
+BIC  = 2*negLl +d*log(ndp);
 
 r.optim.H     = H;
 r.optim.Sigma = Sigma;
 r.optim.Corr  = Corr;
-r.F = F;
+r.optim.negLl = negLl;
+r.optim.negLj = negLj;
+r.optim.LME   = LME;
+r.optim.accu  = accu;
+r.optim.comp  = comp;
+r.optim.AIC   = AIC;
+r.optim.BIC   = BIC;
 
 return;
 
 % --------------------------------------------------------------------------------------------------
-function [negLogJoint, rval, err] = negLogJoint(r, prc_fun, obs_fun, ptrans_prc, ptrans_obs)
+function [negLogJoint, negLogLl, rval, err] = negLogJoint(r, prc_fun, obs_fun, ptrans_prc, ptrans_obs)
 % Returns the the negative log-joint density for perceptual and observation parameters
 
 % Calculate perceptual trajectories. The columns of the matrix infStates contain the trajectories of
@@ -439,6 +439,7 @@ try
     [dummy, infStates] = prc_fun(r, ptrans_prc, 'trans');
 catch err
     negLogJoint = realmax;
+    negLogLl = realmax;
     % Signal that something has gone wrong
     rval = -1;
     return;
@@ -447,7 +448,8 @@ end
 % Calculate the log-likelihood of observed responses given the perceptual trajectories,
 % under the observation model
 trialLogLls = obs_fun(r, infStates, ptrans_obs);
-logLl = nansum(trialLogLls);
+logLl = sum(trialLogLls, 'omitnan');
+negLogLl = -logLl;
 
 % Calculate the log-prior of the perceptual parameters.
 % Only parameters that are neither NaN nor fixed (non-zero prior variance) are relevant.

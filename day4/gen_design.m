@@ -1,4 +1,4 @@
-function inputVector=gen_design(meanProb, nTrials)
+function [inputVector, theta_t] = gen_design(meanProb, nTrials)
 %
 % This code generates sequences according to the Hierarchical Gaussian Filter model: 
 % theta_r and theta_t are probabilities drawn from a Bernoulli
