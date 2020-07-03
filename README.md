@@ -11,13 +11,13 @@ The weekly schedule:
 
 | Time (EST) | Session | |
 |---- |----|---|
-| 9:00-10:30	| Lecture 1: <Lecture 1 Title> | Watch on [Crowdcast](https://www.crowdcast.io/e/s4qmka1v/1) |
+| 9:00-10:30	| Lecture 1: Course introduction, reproducible computing, and major depression | Watch on [Crowdcast](https://www.crowdcast.io/e/s4qmka1v/1) |
 | 10:30-10:45	| Morning Break |Join us in [gather.town](https://gather.town/mshCrgMgr6v17lbm/kcni_school)|
-| 10:45-12:15	| Lecture 2:  <Lecture 1 Title> | Watch on [Crowdcast](https://www.crowdcast.io/e/s4qmka1v/2) |
+| 10:45-12:15	| Lecture 2:  Genome-wide association and polygenic risk | Watch on [Crowdcast](https://www.crowdcast.io/e/s4qmka1v/2) |
 | 12:15pm-1:00pm |	Lunch Break | Join us in [gather.town](https://gather.town/mshCrgMgr6v17lbm/kcni_school)|
-| 1:00-2:30pm	 | Tutorial 1: <Tutorial 1 Title> | Watch on [Crowdcast](https://www.crowdcast.io/e/s4qmka1v/3) |
+| 1:00-2:30pm	 | Tutorial 1: Managing genotype data using PLINK | Watch on [Crowdcast](https://www.crowdcast.io/e/s4qmka1v/3) |
 | 2:30-2:45pm	 | Afternoon Break | Join us in [gather.town](https://gather.town/mshCrgMgr6v17lbm/kcni_school)|
-| 2:45-4:15pm	 | Tutorial 2: <Tutorial 2 Title> | Watch on [Crowdcast](https://www.crowdcast.io/e/s4qmka1v/4) |
+| 2:45-4:15pm	 | Tutorial 2: Calculation of polygenic risk scores in PRSice | Watch on [Crowdcast](https://www.crowdcast.io/e/s4qmka1v/4) |
 | 4:30-5:00pm	| Daily Social Chat? / Q & A | Join us in [gather.town](https://gather.town/mshCrgMgr6v17lbm/kcni_school)|
 
 ## Day 2: Functional Genomics
