@@ -3,7 +3,6 @@ title: "Day 1 KCNI summer school"
 output:
   html_document:
     df_print: paged
-  html_notebook: default
   pdf_document: default
 ---
 ## Activity goals
@@ -11,6 +10,60 @@ output:
 2. Identify and undersdtand GWAS summary statistics
 3. Use PRSice software to calculate a set of PRS for a study sample
 4. Read PRS into R, visualize distributions, and perform basic association analyses
+
+## Step 0 Downloading the data
+
+The data for today is located on figshare. We going to download and unzip it into our day1 directory. 
+
+To find out where we are - it's good to use the R package here.
+The R package `here` will help us all find the same "path" to our files. Let's use `here` to figure out the path to our day1 lessons directory.
+
+```{r}
+library(here)
+
+
+here('day1')
+
+```
+
+In the bash terminal we can cd to this directory for the rest of the steps
+
+```{sh, eval = FALSE}
+## first we need to get inside the day 1 folder
+## you can replace "day1" with the full path to day1 is you don't think you are in the correct place
+cd day1
+
+## download the data into this folder
+wget -O day1_workdir.zip https://ndownloader.figshare.com/files/23661443?private_link=822ba3189343724ffa4c
+```
+
+Now we should see a zip file appear in our directory - but we still need to unzip the file. Let's do that now.
+
+
+```{bash}
+pwd
+```
+
+```{bash}
+unzip day1_workdir.zip # this will create a workdir
+
+# this will unzip the geno data inside the workdir
+mkdir geno
+unzip workdir/geno.zip -d geno
+
+# this will unzip the sumstats data inside the workdir
+mkdir sumstats
+unzip workdir/sumstats.zip -d sumstats
+
+# grab the pheno data
+mkdir pheno
+cp workdir/pheno/* pheno
+
+mkdir prs
+
+# optional - remove the workdir
+rm -rf workdir
+```
 
 ## Calculation of polygenic risk scores (PRS) and analysis against gene expression in human cortex
 ### PRS data requirements and formats
@@ -31,6 +84,21 @@ First step is to launch bash inside the Rstudio terminal:
 bash
 ```  
 
+try running `plink --help` to make sure that plink can be found. If not try the `source_this_if_plink_not_found.sh` script.
+
+```{bash}
+plink --help
+```
+
+```{bash}
+source source_this_if_plink_not_found.sh
+```
+
+```{bash}
+plink --help
+```
+
+
 
 ***
 ### 1. The Genotype dataset
@@ -45,15 +113,14 @@ The PLINK binary file formats are arranged as follows:
 
 
 Let's take a look at the BIM and FAM files:
-```{bash, eval = FALSE}
-cd ~/kcni-school-data/geno
-head geno_r08_n1000.bim
+```{bash}
+head geno/geno_r08_n1000.bim
 ```
 
 Note the columns are not named (no header). They correspond to: chromosome, SNP ID (in this case rs#), chromosomal location in centimorgans (largely defunct), physical chromosomal location in base pairs (1-based), minor allele, major allele  
 
-```{bash, eval = FALSE}
-head geno_r08_n1000.fam
+```{bash}
+head geno/geno_r08_n1000.fam
 ```
 
 Note again that here is no header. The columns correspond to: family ID (useful for related samples), individual ID, father ID, mother ID, sex code, phenotype value.  
@@ -89,18 +156,16 @@ The QC steps can be conveniently accomplished using PLINK. The required QC steps
 ``` --geno ```   = remove SNPs with genotype missingness of greater than %1  
 ``` --mind ```   = remove subjects with genotype missingness of greater than %1  
 
-```{bash, eval=FALSE}
-cd ~/kcni-school-data/geno  
-
+```{bash}
 plink \
-    --bfile geno_r08_n1000 \
+    --bfile geno/geno_r08_n1000 \
     --maf 0.05 \
     --hwe 1e-6 \
     --geno 0.01 \
     --mind 0.01 \
     --write-snplist \
     --make-just-fam \
-    --out geno_qc
+    --out geno/geno_qc
 ```  
 
 **Things to notice:**  
@@ -110,13 +175,13 @@ The geno_qc.snplist file contains SNPs that pass our QC.
 
 ##### **Heterozygosity**  
 
-```{bash, eval=FALSE}
+```{bash}
 plink \
-    --bfile geno_r08_n1000 \
-    --extract geno_qc.snplist \
-    --keep geno_qc.fam \
+    --bfile geno/geno_r08_n1000 \
+    --extract geno/geno_qc.snplist \
+    --keep geno/geno_qc.fam \
     --het \
-    --out geno_qc
+    --out geno/geno_qc
 ```
 
 The output file geno_qc.het gives statistics for rates of SNP heterozygosity across the genome for each subject. Higher-than-expected rates indicate possible sample contamination (possibly inbreeding).  
@@ -124,15 +189,18 @@ The output file geno_qc.het gives statistics for rates of SNP heterozygosity acr
 We need to perform an operation on this output file in R to identify subjects with higher than expected heterozygosity using (arbitrary) criteria. One common threshold for outliers is identifying F-values that are greater or less than 3 standard deviations from the sample mean.  
 
 ```{r}
-setwd("~/kcni-school-data/geno/")
 library(data.table)
 
 # Read in file
-het <- fread("geno_qc.het")
+het <- fread(here("day1", "geno", "geno_qc.het"))
+
 # Get samples with F coefficient within 3 SD of the population mean
 valid <- het[F<=mean(F)+3*sd(F) & F>=mean(F)-3*sd(F)] 
+
 # print FID and IID for valid samples
-fwrite(valid[,c("FID","IID")], "geno_qc.valid.sample", sep="\t") 
+fwrite(valid[,c("FID","IID")], 
+       here("day1", "geno", "geno_qc.valid.sample"), 
+       sep="\t") 
 
 ```  
 
@@ -143,13 +211,13 @@ fwrite(valid[,c("FID","IID")], "geno_qc.valid.sample", sep="\t")
 
 Before calculating relatedness, it will ease calculations if we first remove SNPs that are in high LD (i.e. strongly correlated). This is because the relatedness calculation works by performing pair-wise calculations among all SNPs in the genome between all subjects, which can take several minutes for millions of variants (in our case 5,629,920). It is not necessary for the PRSice calculations, since PRSice performs its own clumping procedure during its PRS calcuation (and depending on our sample size, we may opt to use a larger secondary reference to determine LD structure, rather than pruning our own dataset a priori).  
 
-```{bash, eval=FALSE}
+```{bash}
 plink \
-    --bfile geno_r08_n1000 \
-    --extract geno_qc.snplist \
-    --keep geno_qc.valid.sample \
+    --bfile geno/geno_r08_n1000 \
+    --extract geno/geno_qc.snplist \
+    --keep geno/geno_qc.valid.sample \
     --rel-cutoff 0.125 \
-    --out geno_qc
+    --out geno/geno_qc
 ```  
 
 Our result will be somewhat dissapointing, since there are no cryptically related subjects in our sample at pi-hat > 1.25. This is what we want - it's always important to check!   
@@ -158,29 +226,29 @@ Our result will be somewhat dissapointing, since there are no cryptically relate
 
 The identification of samples with outlying ancestry is important for the calculation of PRS. For the purposes of this workshop, a full ancestry analysis is not feasible. However, we will perform a PCA of our dataset and observe any substantial deviations for demonstration purposes. First we need to prune the dataset for LD in PLINK.  
 
-```{bash, eval=FALSE}
+```{bash}
 plink \
-    --bfile geno_r08_n1000 \
-    --extract geno_qc.snplist \
-    --keep geno_qc.valid.sample \
+    --bfile geno/geno_r08_n1000 \
+    --extract geno/geno_qc.snplist \
+    --keep geno/geno_qc.valid.sample \
     --indep-pairwise 50 5 0.2 \
-    --out geno_qc 
+    --out geno/geno_qc 
 ```  
 
-```{bash, eval=FALSE}
+```{bash}
 plink \
-    --bfile geno_r08_n1000 \
-    --extract geno_qc.prune.in \
-    --keep geno_qc.valid.sample \
+    --bfile geno/geno_r08_n1000 \
+    --extract geno/geno_qc.prune.in \
+    --keep geno/geno_qc.valid.sample \
     --make-bed \
-    --out geno_forPCA
+    --out geno/geno_forPCA
 ```  
 
-```{bash, eval=FALSE}
+```{bash}
 plink \
-    --bfile geno_forPCA \
+    --bfile geno/geno_forPCA \
     --pca \
-    --out geno_qc
+    --out geno/geno_qc
 ```  
 
 The geno_qc.eigenvec gives the first 20 principal components of our genetic data, and allows us to A) visualize ancestral similarities between samples, and B) correct for population microstructure by using as co-variates in our downstream analyses.  
@@ -189,7 +257,7 @@ Read into R and plot the first two components:
 ```{r}
 library(ggplot2)  
 
-pcs <- read.table("~/kcni-school-data/geno/geno_qc.eigenvec")  
+pcs <- read.table(here("day1", "geno", "geno_qc.eigenvec"))  
 
 ggplot(data=pcs,aes(y=V3,x=V4))+
   geom_point()+
@@ -204,34 +272,37 @@ In order to determine ancestry, the genotype data must first be merged with a re
 
 We have two options here: A) we could use the LD-pruned data by setting ```--extract geno_qc.prune.in``` or, as would use the non LD-pruned data by setting ```--extract geno_qc.snplist```. We will perform the latter, to provide PRSIce with more SNPs for matching with our GWAS summary statistics before it performs its own LD pruning (clumping).  
 
-```{bash, eval=FALSE}
+```{bash}
 plink \
-    --bfile geno_r08_n1000 \
-    --keep geno_qc.valid.sample \
-    --extract geno_qc.snplist \
+    --bfile geno/geno_r08_n1000 \
+    --keep geno/geno_qc.valid.sample \
+    --extract geno/geno_qc.snplist \
     --make-bed \
-    --out geno_clean
+    --out geno/geno_clean
 ```  
+
 
 ***
 ***
-### 2. The GWAS summary statistics  
+
+### 2. The GWAS summary statistics 
+
 The second thing we need is a set of full genome-wide summary statistics from a GWAS. We will use the summary statistics from  They are stored in ``` /kcni-school-data/sumstats```
 
 These files have been downloaded from the hosted repository linked in the manuscript Data Availability section (https://datashare.is.ed.ac.uk/handle/10283/3203). This is usually the best source for finding full genome-wide summary statistics rather than truncated sets of only the most significant variants.  
 
 Before we begin, we have to check which summary statistics are in the provided file.  
 
-```{bash,eval=F}
-head ~/kcni-school-data/sumstats/PGC_UKB_depression_genome-wide.txt
+```{bash}
+head sumstats/PGC_UKB_depression_genome-wide.txt
 ```
 
 We see columns for SNP ID (MarkerName), effect and "other" alleles (A1, A2), observed allele frequency (for effect allele: Freq), the log odds ratio for case-control status (logOR), the standard error of logOR (StdErrLogOR), and the association p-value (P).  
 
 These are fairly standard statistics for a case-control study (binary outcome), though sometimes we will fine beta coefficients, t-statistics, or untransformed ORs. In this case, the OR has been log-transformed. We need raw OR for PRSice. This is most efficiently done in bash using a combination of ```awk```, ```sed```, and ```paste```.  
 
-```{bash,eval=FALSE}
-cd ~/kcni-school-data/sumstats
+```{bash}
+cd sumstats
 
 awk 'NR>1{print exp($5)}' PGC_UKB_depression_genome-wide.txt | sed '1i OR' > or.txt
 paste -d" " PGC_UKB_depression_genome-wide.txt or.txt > MDD_sumstats.txt
@@ -240,12 +311,14 @@ paste -d" " PGC_UKB_depression_genome-wide.txt or.txt > MDD_sumstats.txt
 This will take about a minute to run.  
 
 ##### **For the base data (summary stats) we further ensure that:**  
+
 1C. The genome build (e.g. hg19, GRCH38) matches between base and target data [only necessary if SNP IDs are represented by chromosome and location]  
 2C. Effect alleles are correctly specified  
 3C. Only autosomal SNPs are included in the calculation (unless proper sex checking has been performed)  
 4C. Heritability of the source GWAS is substantial enough to warrant PRS calculation (h2>0.05). In our case, SNP-based h2 has been estimated for us by Howard et al. (h2~0.4)    
 
 ***
+
 ### 3. Selecting parameters for PRS calculation
 
 There are several central parameters to consider when calculating a set of PRS:  
@@ -260,11 +333,19 @@ Three important steps will be performed automatically by PRSice.
 1. Effect size shrinkage is not necessary, since many p-value thresholds will be tested  
 2. Checking for ambiguous alleles  
 3. allele flipping  
+
 ***
+
 ### 4. Perform high-resolution scoring against a phenotype
 
+```{bash}
+pwd
+```
+
+Note: on some computers - this will get killed for RAM reasons if this happens to you - we will try to give you a precalculated version..
+
 ```{bash, eval = FALSE}
-cd ~/kcni-school-data
+## cd ~/kcni-school-data/kcni-school-lessons/day1
 
 PRSice_linux \
     --base sumstats/MDD_sumstats.txt \
@@ -285,10 +366,11 @@ PRSice_linux \
     --out prs/MDD 
 ```  
 
+
 ### High resolution plot in R
 
 ```{r}
-scores <- read.table("~/kcni-school-data/prs/MDD.prsice",header=T)
+scores <- read.table(here("day1", "prs","MDD.prsice"),header=T)
 ggplot(data=scores, aes(y=-log10(P),x=log10(Threshold)))+
   geom_point()+
   geom_line()+
@@ -304,7 +386,7 @@ ggplot(data=scores, aes(y=-log10(P),x=log10(Threshold)))+
 ***
 Calculate a set of PRS values, running no other statistical operation:
 ```{bash, eval = FALSE}
-cd ~/kcni-school-data
+## cd ~/kcni-school-data/kcni-school-lessons/day1
 
 PRSice_linux \
     --all-score  \
@@ -326,8 +408,8 @@ PRSice_linux \
 
 After the scores have been calculated, there are a few important things to check in the PRSice log file before continuing.
 
-```{bash, eval = FALSE}
-cat ~/kcni-school-data/prs/MDD_noregress.log
+```{bash}
+cat prs/MDD_noregress.log
 ```  
 
 **Were there allelic mismatches? How many? Should we be worried?**  
@@ -345,12 +427,12 @@ Note: we can perform a number of association analyses within PRSice itself - how
 
 ### Reading data into R  
 ```{r}
-pcs <- read.table("~/kcni-school-data/geno/geno_qc.eigenvec")
+pcs <- read.table(here("day1","geno","geno_qc.eigenvec"))
 names(pcs) <- c("FID","IID",paste0("PC",seq(1,20))) 
 
-prs <- read.table("~/kcni-school-data/prs/MDD_noregress.all_score",header=T)
+prs <- read.table(here("day1","prs","MDD_noregress.all_score"),header=T)
 
-pheno <- readRDS("~/kcni-school-data/pheno/phenotype_file.rds")
+pheno <- readRDS(here("day1","pheno","phenotype_file.rds"))
 ```  
 
 ### merge datasets  
