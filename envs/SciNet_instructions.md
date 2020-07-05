@@ -1,7 +1,5 @@
 # working with tutorial code on
 
-scinetguest230 RPNzcrFVn7
-
 For those who can't get Docker installed on their personal machines. We have the option to use singularity on Compute Ontario resources instead! (Thank you Compute Ontario!)
 
 To use this, please ask your TA, or email KCNI.school@camh.ca for at temporary username and password for the SciNet system.
@@ -24,7 +22,14 @@ To get access to the rstudio-plink environment - you need access to three things
 ## Step 1.1 Connect to SciNet teach node
 
 ```sh
-ssh -L8787:localhost:<your-port> <username>@teach.scinet.utoronto.ca
+ssh <username>@teach.scinet.utoronto.ca
+```
+
+On the teach node we are going to clone and copy the relevant data into our personal scratch space.
+We tried to simplify this step with the attached script.
+
+```sh
+source /scinet/course/ss2020/5_neuroimaging/setup_scinet_kcni_rstudio_env_part1.sh
 ```
 
 ## Step 1.2 start a debugjob
@@ -32,37 +37,67 @@ ssh -L8787:localhost:<your-port> <username>@teach.scinet.utoronto.ca
 A debugjob will insure that we are not sitting on one of the most busy computers. It will timeout after 4 hours - but that is enough time for our tutorials!
 
 ```sh
-debugjob
-ssh -f -N -T -R <your-port>:localhost:<your-port> <your-username>@teach.scinet.utoronto.ca
+debugjob # debugjob is a custom script on SciNet that give you a debugjob
 ```
+
+Take note of what "node" you are assigned. You will need this for later
 
 ## Step 1.3 start rstudio in singularity on SciNet
 
 This part is kinda involved - but just copy and paste..
 Note that you need to substitute `<your-password>` and `<your-port>` in the appropriate places
 
+To do this - we have created a custom script to source.. it has two arguments ( and `<your-port>``<your-password>`).
+
 ```sh
-export RSTUDIO_PASSWORD=<your-password>
-singularity exec \
-  --home $SCRATCH/kcni-school-data:/home/rstudio/kcni-school-data \
-  --bind /scinet/course/ss2019/3/8_bayesianmri/rstudio_auth.sh:/usr/lib/rstudio-server/bin/rstudio_auth.sh \
-  /scinet/course/ss2020/5_neuroimaging/containers/edickie_kcnischool-rstudio_latest-2020-06-26-a07309756986.sif \
-  rserver \
-  --auth-none 0 \
-  --auth-pam-helper-path rstudio_auth.sh \
-  --www-port <your-port>
+source /scinet/course/ss2020/5_neuroimaging/setup_scinet_kcni_rstudio_env_part2.sh <your-port> <your-password>
+```
+
+For example: if your picked port 9798 and your password is "my_stupid_password"
+
+```sh
+source /scinet/course/ss2020/5_neuroimaging/setup_scinet_kcni_rstudio_env_part2.sh 9798 my_stupid_password
+```
+
+**DON'T CLOSE THIS TERMINAL!** open a new terminal for the next step
+
+## Step 1.4 Set up a "tunnel" to connect your computer to the rstudio
+
+Note: to do this step you need to pay attention to which "node" of Scinet you were assigned to when you typed `debugjob`.
+This should again be echoed by the 1.3 script.
+
+**OPEN ANOTHER TERMINAL, don't close the one from step 1.3** and type:
+
+```sh
+ssh -L8787:localhost:<my_port> <my_username>@teach.scinet.utoronto.ca
+ssh -L<my_port>:localhost:<my_port> <my_debubjob_node>
+```
+
+For example:
+In the situation where
++ <my_port> is 9798
++ <my_debugjob_node> is teach36
++ <my username> is scinetguest230@teach.scinet.utoronto.ca
+
+```sh
+ssh -L8787:localhost:9798 scinetguest230@teach.scinet.utoronto.ca
+ssh -L9798:localhost:9798 teach36
 ```
 
 Attaching the tunnel all the way out
 
 ## Step 1.4 open the browser on you local machine.
 
-Open your browser (i.e. google-chrome, safari or firefox) and point your browser at localhost:8787 and you should see rstudio!!
 
 It will prompt for a username and password. This will be `<your-username>` and `<your-password>`
 
 
-# Part 2. Cloning the KCNI lession Material
+
+Open your browser (i.e. google-chrome, safari or firefox) and point your browser at localhost:8787 and you should see rstudio!!
+
+# Part 2. Cloning the KCNI lesson Material
+
+(Update: this will have been done during Step 1.3)
 
 Inside the rstudio instance - you can clone the kcni school code into you home!
 
