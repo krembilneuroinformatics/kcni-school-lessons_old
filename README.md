@@ -47,8 +47,7 @@ The weekly schedule:
 
 | Time (EST) | Session | |
 |---- |----|---|
-| 9:00-10:30	| Lecture 1 (EH): micro-scale neurophysiological modelling
- | Watch on [Crowdcast](https://www.crowdcast.io/e/s4qmka1v/9) |
+| 9:00-10:30	| Lecture 1 (EH): micro-scale neurophysiological modelling | Watch on [Crowdcast](https://www.crowdcast.io/e/s4qmka1v/9) |
 | 10:30-10:45	| Morning Break |Join us in [gather.town](https://gather.town/mshCrgMgr6v17lbm/kcni_school)|
 | 10:45-12:15	| Lecture 2 (JG): meso-/macro-scale neurophysiological modelling | Watch on [Crowdcast](https://www.crowdcast.io/e/s4qmka1v/10) |
 | 12:15pm-1:00pm |	Lunch Break | Join us in [gather.town](https://gather.town/mshCrgMgr6v17lbm/kcni_school)|
