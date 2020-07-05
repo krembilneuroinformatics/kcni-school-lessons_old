@@ -342,7 +342,7 @@ Three important steps will be performed automatically by PRSice.
 pwd
 ```
 
-Note: on some computers - this will get killed for RAM reasons if this happens to you - we will try to give you a precalculated version..
+Note: on some computers, this will get killed for RAM reasons. The summary stats and genotype files are quite large - if you run into this problem, replace the input genotype file with the pruned dataset that we used for principal components analysis: ``` --target geno/geno_forPCA ```.  
 
 ```{bash, eval = FALSE}
 ## cd ~/kcni-school-data/kcni-school-lessons/day1
