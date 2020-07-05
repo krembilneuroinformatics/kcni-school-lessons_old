@@ -32,9 +32,9 @@ The weekly schedule:
 | 10:30-10:45	| Morning Break |Join us in [gather.town](https://gather.town/mshCrgMgr6v17lbm/kcni_school)|
 | 10:45-12:15	| Lecture 2:  KCNI functional genomics vignettes: Integrative Neuroanatomy and Computational Genomics | Watch on [Crowdcast](https://www.crowdcast.io/e/s4qmka1v/6) |
 | 12:15pm-1:00pm |	Lunch Break | Join us in [gather.town](https://gather.town/mshCrgMgr6v17lbm/kcni_school)|
-| 1:00-2:30pm	 | Tutorial 1: Differential expression in depression and aging in R | Watch on [Crowdcast](https://www.crowdcast.io/e/s4qmka1v/7) |
+| 1:00-2:30pm	 | Tutorial 1: Analyzing brain gene expression data with R  | Watch on [Crowdcast](https://www.crowdcast.io/e/s4qmka1v/7) |
 | 2:30-2:45pm	 | Afternoon Break | Join us in [gather.town](https://gather.town/mshCrgMgr6v17lbm/kcni_school)|
-| 2:45-4:15pm	 | Tutorial 2: Cell type deconvolution in bulk gene expression samples | Watch on [Crowdcast](https://www.crowdcast.io/e/s4qmka1v/8) |
+| 2:45-4:15pm	 | Tutorial 2: Deconvolving cell type proportions from bulk tissue samples | Watch on [Crowdcast](https://www.crowdcast.io/e/s4qmka1v/8) |
 | 4:30-5:00pm	| Daily Social Chat? / Q & A | Join us in [gather.town](https://gather.town/mshCrgMgr6v17lbm/kcni_school)|
 
 
