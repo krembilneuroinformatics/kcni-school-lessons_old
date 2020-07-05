@@ -13,35 +13,25 @@ output:
 
 ## Step 0 Downloading the data
 
-The data for today is located on figshare. We going to download and unzip it into our day1 directory. 
+Once the kcni-school-lessons git repo has been cloned, you will be able to load the R notebook for day 1 into Rstudio.  
 
-To find out where we are - it's good to use the R package here.
-The R package `here` will help us all find the same "path" to our files. Let's use `here` to figure out the path to our day1 lessons directory.
-
-```{r}
-library(here)
-
-
-here('day1')
-
-```
-
-In the bash terminal we can cd to this directory for the rest of the steps
+The data for today is located on figshare. We going to download and unzip it into our day1 directory. In the bash terminal we can cd to this directory for the rest of the steps  
 
 ```{sh, eval = FALSE}
 ## first we need to get inside the day 1 folder
-## you can replace "day1" with the full path to day1 is you don't think you are in the correct place
-cd day1
+## you can replace "day1" with the full path to day1 if you don't think you are in the correct place
+cd kcni-school-lessons/day1
 
 ## download the data into this folder
 wget -O day1_workdir.zip https://ndownloader.figshare.com/files/23661443?private_link=822ba3189343724ffa4c
 ```
 
-Now we should see a zip file appear in our directory - but we still need to unzip the file. Let's do that now.
+Now we should see a zip file appear in our day1 directory - but we still need to unzip the file. Let's do that now.
 
 
 ```{bash}
 pwd
+ls
 ```
 
 ```{bash}
@@ -61,11 +51,12 @@ cp workdir/pheno/* pheno
 
 mkdir prs
 
-# optional - remove the workdir
+# optional - remove the workdir and zipped package
 rm -rf workdir
+rm day1_workdir.zip
 ```
 
-## Calculation of polygenic risk scores (PRS) and analysis against gene expression in human cortex
+## Calculation of polygenic risk scores (PRS)
 ### PRS data requirements and formats
 
 PRSice v2 software (http://www.prsice.info/) will be used for high-resolution scoring, initial associations, and some visualization.
@@ -189,6 +180,7 @@ The output file geno_qc.het gives statistics for rates of SNP heterozygosity acr
 We need to perform an operation on this output file in R to identify subjects with higher than expected heterozygosity using (arbitrary) criteria. One common threshold for outliers is identifying F-values that are greater or less than 3 standard deviations from the sample mean.  
 
 ```{r}
+library(here)
 library(data.table)
 
 # Read in file
@@ -302,13 +294,10 @@ We see columns for SNP ID (MarkerName), effect and "other" alleles (A1, A2), obs
 These are fairly standard statistics for a case-control study (binary outcome), though sometimes we will fine beta coefficients, t-statistics, or untransformed ORs. In this case, the OR has been log-transformed. We need raw OR for PRSice. This is most efficiently done in bash using a combination of ```awk```, ```sed```, and ```paste```.  
 
 ```{bash}
-cd sumstats
-
-awk 'NR>1{print exp($5)}' PGC_UKB_depression_genome-wide.txt | sed '1i OR' > or.txt
-paste -d" " PGC_UKB_depression_genome-wide.txt or.txt > MDD_sumstats.txt
+awk 'NR>1{print exp($5)}' sumstats/PGC_UKB_depression_genome-wide.txt | sed '1i OR' > sumstats/or.txt
+paste -d" " sumstats/PGC_UKB_depression_genome-wide.txt sumstats/or.txt > sumstats/MDD_sumstats.txt
 ```  
 
-This will take about a minute to run.  
 
 ##### **For the base data (summary stats) we further ensure that:**  
 
@@ -345,7 +334,7 @@ pwd
 Note: on some computers, this will get killed for RAM reasons. The summary stats and genotype files are quite large - if you run into this problem, replace the input genotype file with the pruned dataset that we used for principal components analysis: ``` --target geno/geno_forPCA ```.  
 
 ```{bash, eval = FALSE}
-## cd ~/kcni-school-data/kcni-school-lessons/day1
+## cd ~/kcni-school-lessons/day1
 
 PRSice_linux \
     --base sumstats/MDD_sumstats.txt \
@@ -386,7 +375,7 @@ ggplot(data=scores, aes(y=-log10(P),x=log10(Threshold)))+
 ***
 Calculate a set of PRS values, running no other statistical operation:
 ```{bash, eval = FALSE}
-## cd ~/kcni-school-data/kcni-school-lessons/day1
+## cd ~/kcni-school-lessons/day1
 
 PRSice_linux \
     --all-score  \
