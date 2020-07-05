@@ -1,4 +1,4 @@
-# working with tutorial code on
+# working with tutorial code using SciNet
 
 For those who can't get Docker installed on their personal machines. We have the option to use singularity on Compute Ontario resources instead! (Thank you Compute Ontario!)
 
