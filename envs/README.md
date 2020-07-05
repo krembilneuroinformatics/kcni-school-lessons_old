@@ -12,6 +12,8 @@ To install Docker follow the instructions at: https://www.docker.com/products/do
 
 **If you have the "admin rights" (or the right to install software on the computer you are using)** This _should_ be relatively straight forward. Installing docker on some platforms (like Window's) usually means that you need to "allow virtualization" which is something that some workplace provided computers disable. If the installing docker is not possible at this time. See the next section (TBA) about accessing the environments via the Compute Canada Teach Cluster.
 
+[**If you fail to install Docker, click here for instuctions to use SciNet resources**](https://github.com/krembilneuroinformatics/kcni-school-lessons/blob/master/envs/SciNet_instructions.md#working-with-tutorial-code-using-scinet)
+
 You may need to configure file sharing with Docker using Docker Desktop. More on this below.
 
 ### Running the R and genomics environment
