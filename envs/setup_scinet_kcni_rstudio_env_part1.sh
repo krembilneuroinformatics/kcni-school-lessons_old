@@ -9,6 +9,7 @@ if [ -d "$LESSONS_DIR" ]; then
   ### update lessons if they exist already ###
   echo "Updating the kcni-school-lessons repository"
   cd $SCRATCH/kcni-school-data/kcni-school-lessons
+  git commit -am  "staging all local modifications"
   git pull --recurse-submodules
 else
   ###  Control will jump here if $DIR does NOT exists ###
@@ -19,5 +20,5 @@ else
 fi
 
 echo "Moving larger data into the repository"
-cp /scinet/course/ss2020/5_neuroimaging/kcni_data/day1_workdir.zip $SCRATCH/kcni-school-data/kcni-school-lessons/day1/
+cp -f /scinet/course/ss2020/5_neuroimaging/kcni_data/day1_workdir.zip $SCRATCH/kcni-school-data/kcni-school-lessons/day1/
 scp -r /scinet/course/ss2020/5_neuroimaging/kcni_data/allen_brain $SCRATCH/kcni-school-data/kcni-school-lessons/day2/kcni_summer/
