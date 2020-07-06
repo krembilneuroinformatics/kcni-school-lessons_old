@@ -25,6 +25,8 @@ To get access to the rstudio-plink environment - you need access to three things
 ssh <username>@teach.scinet.utoronto.ca
 ```
 
+## Step 1.2 Set up the data
+
 On the teach node we are going to clone and copy the relevant data into our personal scratch space.
 We tried to simplify this step with the attached script.
 
@@ -32,17 +34,17 @@ We tried to simplify this step with the attached script.
 source /scinet/course/ss2020/5_neuroimaging/setup_scinet_kcni_rstudio_env_part1.sh
 ```
 
-## Step 1.2 start a debugjob
+## Step 1.3 start a debugjob
 
 A debugjob will insure that we are not sitting on one of the most busy computers. It will timeout after 4 hours - but that is enough time for our tutorials!
 
 ```sh
-debugjob # debugjob is a custom script on SciNet that give you a debugjob
+debugjob -n 10 # debugjob is a custom script on SciNet that give you a debugjob
 ```
 
 Take note of what "node" you are assigned. You will need this for later
 
-## Step 1.3 start rstudio in singularity on SciNet
+## Step 1.4 start rstudio in singularity on SciNet
 
 This part is kinda involved - but just copy and paste..
 Note that you need to substitute `<your-password>` and `<your-port>` in the appropriate places
@@ -61,7 +63,7 @@ source /scinet/course/ss2020/5_neuroimaging/setup_scinet_kcni_rstudio_env_part2.
 
 **DON'T CLOSE THIS TERMINAL!** open a new terminal for the next step
 
-## Step 1.4 Set up a "tunnel" to connect your computer to the rstudio
+## Step 1.5 Set up a "tunnel" to connect your computer to the rstudio
 
 Note: to do this step you need to pay attention to which "node" of Scinet you were assigned to when you typed `debugjob`.
 This should again be echoed by the 1.3 script.
@@ -86,7 +88,7 @@ ssh -L9798:localhost:9798 teach36
 
 Attaching the tunnel all the way out
 
-## Step 1.4 open the browser on you local machine.
+## Step 1.6 open the browser on you local machine.
 
 
 It will prompt for a username and password. This will be `<your-username>` and `<your-password>`
